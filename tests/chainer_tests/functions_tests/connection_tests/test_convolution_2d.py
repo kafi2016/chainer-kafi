@@ -15,6 +15,7 @@ from chainer.testing import condition
 
 @testing.parameterize(*testing.product({
     'c_contiguous': [True, False],
+    'cover_all': [True, False],
     'x_dtype': [numpy.float16, numpy.float32, numpy.float64],
     'W_dtype': [numpy.float16, numpy.float32, numpy.float64],
 }))
@@ -32,11 +33,16 @@ class TestConvolution2DFunction(unittest.TestCase):
             (out_channels, in_channels, kh, kw)).astype(self.W_dtype)
         self.b = numpy.random.uniform(
             -1, 1, out_channels).astype(self.x_dtype)
-
         self.x = numpy.random.uniform(
             -1, 1, (2, 3, 4, 3)).astype(self.x_dtype)
         self.gy = numpy.random.uniform(
             -1, 1, (2, 2, 2, 2)).astype(self.x_dtype)
+        if self.cover_all:
+            self.gy = numpy.random.uniform(
+                -1, 1, (2, 2, 3, 2)).astype(self.x_dtype)
+        else:
+            self.gy = numpy.random.uniform(
+                -1, 1, (2, 2, 2, 2)).astype(self.x_dtype)
         self.check_backward_options = {}
         if self.x_dtype == numpy.float16:
             self.check_backward_options = {'atol': 5e-2, 'rtol': 5e-1}
@@ -50,14 +56,14 @@ class TestConvolution2DFunction(unittest.TestCase):
         b_cpu = None if nobias else chainer.Variable(self.b)
         y_cpu = functions.convolution_2d(
             x_cpu, W_cpu, b_cpu, stride=self.stride, pad=self.pad,
-            use_cudnn=self.use_cudnn)
+            use_cudnn=self.use_cudnn, cover_all=self.cover_all)
 
         x_gpu = chainer.Variable(cuda.to_gpu(self.x))
         W_gpu = chainer.Variable(cuda.to_gpu(self.W))
         b_gpu = None if nobias else chainer.Variable(cuda.to_gpu(self.b))
         y_gpu = functions.convolution_2d(
             x_gpu, W_gpu, b_gpu, stride=self.stride, pad=self.pad,
-            use_cudnn=self.use_cudnn)
+            use_cudnn=self.use_cudnn, cover_all=self.cover_all)
 
         gradient_check.assert_allclose(y_cpu.data, y_gpu.data.get())
 
@@ -92,7 +98,7 @@ class TestConvolution2DFunction(unittest.TestCase):
 
         gradient_check.check_backward(
             convolution_2d.Convolution2DFunction(
-                self.stride, self.pad, self.use_cudnn),
+                self.stride, self.pad, self.use_cudnn, self.cover_all),
             args, y_grad, eps=1e-2, **self.check_backward_options)
 
     @condition.retry(3)
@@ -132,6 +138,7 @@ class TestConvolution2DFunction(unittest.TestCase):
 
 @testing.parameterize(*testing.product({
     'use_cudnn': [True, False],
+    'cover_all': [True, False],
     'dtype': [numpy.float16, numpy.float32, numpy.float64],
 }))
 @attr.cudnn
@@ -148,8 +155,12 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
         self.W = cuda.cupy.random.normal(
             0, numpy.sqrt(1. / (kh * kw * in_channels)),
             (out_channels, in_channels, kh, kw)).astype(self.dtype)
-        self.gy = cuda.cupy.random.uniform(
-            -1, 1, (2, 2, 2, 2)).astype(self.dtype)
+        if self.cover_all:
+            self.gy = cuda.cupy.random.uniform(
+                -1, 1, (2, 2, 3, 2)).astype(self.dtype)
+        else:
+            self.gy = cuda.cupy.random.uniform(
+                -1, 1, (2, 2, 2, 2)).astype(self.dtype)
         self.skip_test = (
             self.cudnn and self.dtype == numpy.float16 and
             cuda.cudnn.cudnn.getVersion() < 3000)
@@ -159,7 +170,7 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
         W = chainer.Variable(self.W)
         return functions.convolution_2d(
             x, W, None, stride=self.stride, pad=self.pad,
-            use_cudnn=self.use_cudnn)
+            use_cudnn=self.use_cudnn, cover_all=self.cover_all)
 
     def test_call_cudnn_forward(self):
         if self.skip_test:
