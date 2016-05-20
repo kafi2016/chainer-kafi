@@ -80,7 +80,7 @@ class Convolution2DFunction(function.Function):
         out_h = conv.get_conv_outsize(h, kh, self.sy, self.ph)
         out_w = conv.get_conv_outsize(w, kw, self.sx, self.pw)
 
-        y = cuda.cupy.zeros((n, out_c, out_h, out_w), dtype=x.dtype)
+        y = cuda.cupy.empty((n, out_c, out_h, out_w), dtype=x.dtype)
         if (cuda.cudnn_enabled and self.use_cudnn and
                 _check_cudnn_acceptable_type(x.dtype, W.dtype)):
             x = cuda.cupy.ascontiguousarray(x)
@@ -230,9 +230,6 @@ class Convolution2DFunction(function.Function):
 
             for i in moves.range(n):
                 gcol_mats[i] = cuda.cupy.dot(W_mat.T, gy_mats[i])
-
-            gcol = cuda.cupy.tensordot(W, gy, (0, 1)).astype(x.dtype)
-            gcol = cuda.cupy.rollaxis(gcol, 3)
 
             gx = conv.col2im_gpu(
                 gcol, self.sy, self.sx, self.ph, self.pw, h, w)
