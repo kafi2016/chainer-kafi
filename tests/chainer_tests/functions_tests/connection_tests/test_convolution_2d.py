@@ -138,7 +138,6 @@ class TestConvolution2DFunction(unittest.TestCase):
 
 @testing.parameterize(*testing.product({
     'use_cudnn': [True, False],
-    'cover_all': [True, False],
     'dtype': [numpy.float16, numpy.float32, numpy.float64],
 }))
 @attr.cudnn
@@ -155,12 +154,8 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
         self.W = cuda.cupy.random.normal(
             0, numpy.sqrt(1. / (kh * kw * in_channels)),
             (out_channels, in_channels, kh, kw)).astype(self.dtype)
-        if self.cover_all:
-            self.gy = cuda.cupy.random.uniform(
-                -1, 1, (2, 2, 3, 2)).astype(self.dtype)
-        else:
-            self.gy = cuda.cupy.random.uniform(
-                -1, 1, (2, 2, 2, 2)).astype(self.dtype)
+        self.gy = cuda.cupy.random.uniform(
+            -1, 1, (2, 2, 2, 2)).astype(self.dtype)
         self.skip_test = (
             self.cudnn and self.dtype == numpy.float16 and
             cuda.cudnn.cudnn.getVersion() < 3000)
@@ -170,7 +165,7 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
         W = chainer.Variable(self.W)
         return functions.convolution_2d(
             x, W, None, stride=self.stride, pad=self.pad,
-            use_cudnn=self.use_cudnn, cover_all=self.cover_all)
+            use_cudnn=self.use_cudnn)
 
     def test_call_cudnn_forward(self):
         if self.skip_test:

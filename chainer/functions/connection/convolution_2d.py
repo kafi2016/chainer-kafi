@@ -65,7 +65,7 @@ class Convolution2DFunction(function.Function):
         kh, kw = W.shape[2:]
         self.col = conv.im2col_cpu(
             x, kh, kw, self.sy, self.sx, self.ph, self.pw,
-            cover_all = self.cover_all)
+            cover_all=self.cover_all)
         y = numpy.tensordot(
             self.col, W, ((1, 2, 3), (1, 2, 3))).astype(x.dtype)
         if b is not None:
@@ -85,7 +85,7 @@ class Convolution2DFunction(function.Function):
                                       cover_all=self.cover_all)
 
         y = cuda.cupy.empty((n, out_c, out_h, out_w), dtype=x.dtype)
-        if (cuda.cudnn_enabled and self.use_cudnn and
+        if (not self.cover_all and cuda.cudnn_enabled and self.use_cudnn and
                 _check_cudnn_acceptable_type(x.dtype, W.dtype)):
             x = cuda.cupy.ascontiguousarray(x)
             W = cuda.cupy.ascontiguousarray(W)
@@ -168,7 +168,7 @@ class Convolution2DFunction(function.Function):
         kh, kw = W.shape[2:]
 
         gW = cuda.cupy.empty_like(W)
-        if (cuda.cudnn_enabled and self.use_cudnn and
+        if (not self.cover_all and cuda.cudnn_enabled and self.use_cudnn and
                 _check_cudnn_acceptable_type(x.dtype, W.dtype)):
             x = cuda.cupy.ascontiguousarray(x)
             W = cuda.cupy.ascontiguousarray(W)
