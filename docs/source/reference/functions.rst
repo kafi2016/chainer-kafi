@@ -103,6 +103,10 @@ expand_dims
 ~~~~~~~~~~~
 .. autofunction:: expand_dims
 
+permutate
+~~~~~~~~~
+.. autofunction:: permutate
+
 reshape
 ~~~~~~~
 .. autofunction:: reshape
