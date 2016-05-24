@@ -43,11 +43,13 @@ class TestConvolution2DFunction(unittest.TestCase):
         else:
             self.gy = numpy.random.uniform(
                 -1, 1, (2, 2, 2, 2)).astype(self.x_dtype)
-        self.check_backward_options = {}
+        self.check_backward_options = {'eps': 1e-2}
         if self.x_dtype == numpy.float16:
-            self.check_backward_options = {'atol': 5e-2, 'rtol': 5e-1}
+            self.check_backward_options = {
+                'eps': 2** -3, 'atol': 1e-2, 'rtol': 1e-1}
         elif self.W_dtype == numpy.float16:
-            self.check_backward_options = {'atol': 5e-3, 'rtol': 5e-2}
+            self.check_backward_options = {
+                'eps': 2** -3, 'atol': 1e-3, 'rtol': 1e-2}
 
     @attr.cudnn
     def test_forward_consistency(self, nobias=False):
@@ -99,7 +101,7 @@ class TestConvolution2DFunction(unittest.TestCase):
         gradient_check.check_backward(
             convolution_2d.Convolution2DFunction(
                 self.stride, self.pad, self.use_cudnn, self.cover_all),
-            args, y_grad, eps=1e-2, **self.check_backward_options)
+            args, y_grad, **self.check_backward_options)
 
     @condition.retry(3)
     def test_backward_cpu(self):
