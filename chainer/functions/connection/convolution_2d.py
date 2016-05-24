@@ -79,7 +79,8 @@ class Convolution2DFunction(function.Function):
                                       cover_all=self.cover_all)
 
         y = cuda.cupy.empty((n, out_c, out_h, out_w), dtype=x.dtype)
-        if not self.cover_all and cuda.cudnn_enabled and self.use_cudnn:
+        if (not self.cover_all and cuda.cudnn_enabled and self.use_cudnn and
+                self.pw >= 0 and self.ph >= 0):
             x = cuda.cupy.ascontiguousarray(x)
             W = cuda.cupy.ascontiguousarray(W)
             if b is not None:
@@ -160,7 +161,8 @@ class Convolution2DFunction(function.Function):
         kh, kw = W.shape[2:]
 
         gW = cuda.cupy.empty_like(W)
-        if not self.cover_all and cuda.cudnn_enabled and self.use_cudnn:
+        if (not self.cover_all and cuda.cudnn_enabled and self.use_cudnn and
+                self.pw >= 0 and self.ph >= 0):
             x = cuda.cupy.ascontiguousarray(x)
             W = cuda.cupy.ascontiguousarray(W)
             gy = cuda.cupy.ascontiguousarray(gy)
