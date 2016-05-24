@@ -43,11 +43,14 @@ class TestConvolution2DFunction(unittest.TestCase):
         else:
             self.gy = numpy.random.uniform(
                 -1, 1, (2, 2, 2, 2)).astype(self.x_dtype)
+        self.check_forward_options = {}
         self.check_backward_options = {'eps': 1e-2}
         if self.x_dtype == numpy.float16:
+            self.check_forward_options = {'atol': 1e-4, 'rtol': 1e-3}
             self.check_backward_options = {
                 'eps': 2 ** -3, 'atol': 1e-2, 'rtol': 1e-1}
         elif self.W_dtype == numpy.float16:
+            self.check_forward_options = {'atol': 1e-4, 'rtol': 1e-3}
             self.check_backward_options = {
                 'eps': 2 ** -3, 'atol': 1e-3, 'rtol': 1e-2}
 
@@ -67,7 +70,8 @@ class TestConvolution2DFunction(unittest.TestCase):
             x_gpu, W_gpu, b_gpu, stride=self.stride, pad=self.pad,
             use_cudnn=self.use_cudnn, cover_all=self.cover_all)
 
-        gradient_check.assert_allclose(y_cpu.data, y_gpu.data.get())
+        gradient_check.assert_allclose(
+            y_cpu.data, y_gpu.data.get(), **self.check_forward_options)
 
     @attr.gpu
     def test_forward_consistency_im2col(self):
