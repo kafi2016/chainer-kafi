@@ -155,9 +155,9 @@ class TestDeconvolution2DCudnnCall(unittest.TestCase):
             -1, 1, (N, self.in_channels, inh, inw)).astype(self.dtype)
         self.gy = cuda.cupy.random.uniform(
             -1, 1, (N, self.out_channels, outh, outw)).astype(self.dtype)
-        self.skip_test = (
-            self.cudnn and self.dtype == numpy.float16 and
-            cuda.cudnn.cudnn.getVersion() < 3000)
+        self.expect = self.use_cudnn and (
+            cuda.cudnn.cudnn.getVersion() >= 3000 or
+            self.dtype != numpy.float16)
 
     def forward(self):
         x = chainer.Variable(self.x)
@@ -166,24 +166,20 @@ class TestDeconvolution2DCudnnCall(unittest.TestCase):
             x, W, None, stride=1, pad=1, use_cudnn=self.use_cudnn)
 
     def test_call_cudnn_forward(self):
-        if self.skip_test:
-            return
         if cuda.cudnn.cudnn.getVersion() >= 4000:
             name = 'cupy.cudnn.cudnn.convolutionBackwardData_v3'
         else:
             name = 'cupy.cudnn.cudnn.convolutionBackwardData_v2'
         with mock.patch(name) as func:
             self.forward()
-            self.assertEqual(func.called, self.use_cudnn)
+            self.assertEqual(func.called, self.expect)
 
     def test_call_cudnn_backward(self):
-        if self.skip_test:
-            return
         y = self.forward()
         y.grad = self.gy
         with mock.patch('cupy.cudnn.cudnn.convolutionForward') as func:
             y.backward()
-            self.assertEqual(func.called, self.use_cudnn)
+            self.assertEqual(func.called, self.expect)
 
 
 testing.run_module(__name__, __file__)
